@@ -30,8 +30,8 @@
 <body>
   <div id="levelMenu">
     <strong>اختر المستوى:</strong><br>
-    <button onclick="startLevel(1)">سهل جداً</button>
-    <button onclick="startLevel(2)">سهل</button>
+    <button onclick="startLevel(1)">سهل</button>
+    <button onclick="startLevel(2)">سهل جداً</button>
     <button onclick="startLevel(3)">متوسط</button>
     <button onclick="startLevel(4)">صعب</button>
     <button onclick="startLevel(5)">احترافي</button>
@@ -40,19 +40,17 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/controls/OrbitControls.min.js"></script>
   <script>
-    let scene, camera, renderer, controls, cubelets = [];
+    let scene, camera, renderer, controls, cubelets = [], cubeGroup;
 
     function initScene() {
       scene = new THREE.Scene();
       camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-      camera.position.set(5, 5, 10);
-
       renderer = new THREE.WebGLRenderer({antialias: true});
       renderer.setSize(window.innerWidth, window.innerHeight);
       document.body.appendChild(renderer.domElement);
 
       controls = new THREE.OrbitControls(camera, renderer.domElement);
-      controls.enableDamping = true;
+      camera.position.z = 7;
 
       window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
@@ -63,14 +61,14 @@
       animate();
     }
 
-    function createColoredCubelet(x, y, z) {
+    function createCubelet(x, y, z) {
       const faceColors = [
-        0xff0000, // +X Red
-        0xffff00, // -X Yellow
-        0x00ff00, // +Y Green
-        0x0000ff, // -Y Blue
-        0xffffff, // +Z White
-        0xffa500  // -Z Orange
+        0xff0000, // Right - red
+        0xffff00, // Left - yellow
+        0x00ff00, // Top - green
+        0x0000ff, // Bottom - blue
+        0xffffff, // Front - white
+        0xffa500  // Back - orange
       ];
       const materials = faceColors.map(color => new THREE.MeshBasicMaterial({ color }));
       const geometry = new THREE.BoxGeometry(1, 1, 1);
@@ -80,18 +78,19 @@
     }
 
     function buildCube() {
-      cubelets.forEach(c => scene.remove(c));
+      if (cubeGroup) scene.remove(cubeGroup);
+      cubeGroup = new THREE.Group();
       cubelets = [];
-
       for (let x = -1; x <= 1; x++) {
         for (let y = -1; y <= 1; y++) {
           for (let z = -1; z <= 1; z++) {
-            let cubelet = createColoredCubelet(x * 1.05, y * 1.05, z * 1.05);
-            scene.add(cubelet);
+            let cubelet = createCubelet(x * 1.05, y * 1.05, z * 1.05);
+            cubeGroup.add(cubelet);
             cubelets.push(cubelet);
           }
         }
       }
+      scene.add(cubeGroup);
     }
 
     function shuffleCube(times) {
@@ -103,31 +102,25 @@
 
         const group = new THREE.Group();
         toRotate.forEach(c => {
-          scene.remove(c);
-          group.attach(c);
+          cubeGroup.remove(c);
+          group.add(c);
         });
 
-        scene.add(group);
-        const rotAxis = axis === 'x' ? new THREE.Vector3(1, 0, 0) :
-                        axis === 'y' ? new THREE.Vector3(0, 1, 0) :
-                                       new THREE.Vector3(0, 0, 1);
-
+        const rotAxis = axis === 'x' ? new THREE.Vector3(1, 0, 0) : axis === 'y' ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, 0, 1);
         group.rotateOnAxis(rotAxis, angle);
 
-        // إعادة توزيع المكعبات
         toRotate.forEach(c => {
+          group.updateMatrixWorld();
           c.position.setFromMatrixPosition(c.matrixWorld);
-          scene.add(c);
+          cubeGroup.add(c);
         });
-
-        scene.remove(group);
       }
     }
 
     function startLevel(level) {
       buildCube();
       const shuffleCount = [0, 2, 4, 8, 16];
-      shuffleCube(shuffleCount[level - 1]);
+      setTimeout(() => shuffleCube(shuffleCount[level - 1]), 100); // allow cube to be built first
     }
 
     function animate() {
