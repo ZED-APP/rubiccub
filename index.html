@@ -2,135 +2,29 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>3D Rubik's Cube - Levels</title>
+  <title>Rubik's Cube Web Game - 5 Levels</title>
   <style>
-    body { margin: 0; overflow: hidden; font-family: sans-serif; background: #111; color: white; }
-    #levelMenu {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      z-index: 1;
-      background: rgba(0,0,0,0.8);
-      padding: 10px 20px;
-      border-radius: 8px;
+    body { margin: 0; overflow: hidden; background: #222; color: #fff; }
+    #levelSelect {
+      position: absolute; top: 10px; left: 10px; z-index: 2;
+      font-size: 18px; padding: 6px;
     }
-    #levelMenu button {
-      margin: 4px;
-      padding: 6px 12px;
-      border: none;
-      background: #444;
-      color: white;
-      cursor: pointer;
-    }
-    #levelMenu button:hover {
-      background: #666;
+    #info {
+      position: absolute; top: 10px; right: 10px; z-index: 2;
+      font-size: 16px; background: #333; padding: 6px 12px; border-radius: 6px;
     }
   </style>
 </head>
 <body>
-  <div id="levelMenu">
-    <strong>اختر المستوى الذي تريد</strong><br>
-    <button onclick="startLevel(1)">سهل</button>
-    <button onclick="startLevel(2)">سهل جداً</button>
-    <button onclick="startLevel(3)">متوسط</button>
-    <button onclick="startLevel(4)">صعب</button>
-    <button onclick="startLevel(5)">احترافي</button>
-  </div>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/controls/OrbitControls.min.js"></script>
-  <script>
-    let scene, camera, renderer, controls, cubelets = [], cubeGroup;
-
-    function initScene() {
-      scene = new THREE.Scene();
-      camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-      renderer = new THREE.WebGLRenderer({antialias: true});
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      document.body.appendChild(renderer.domElement);
-
-      controls = new THREE.OrbitControls(camera, renderer.domElement);
-      camera.position.z = 7;
-
-      window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-      });
-
-      animate();
-    }
-
-    function createCubelet(x, y, z) {
-      const faceColors = [
-        0xff0000, // Right - red
-        0xffff00, // Left - yellow
-        0x00ff00, // Top - green
-        0x0000ff, // Bottom - blue
-        0xffffff, // Front - white
-        0xffa500  // Back - orange
-      ];
-      const materials = faceColors.map(color => new THREE.MeshBasicMaterial({ color }));
-      const geometry = new THREE.BoxGeometry(1, 1, 1);
-      const cubelet = new THREE.Mesh(geometry, materials);
-      cubelet.position.set(x, y, z);
-      return cubelet;
-    }
-
-    function buildCube() {
-      if (cubeGroup) scene.remove(cubeGroup);
-      cubeGroup = new THREE.Group();
-      cubelets = [];
-      for (let x = -1; x <= 1; x++) {
-        for (let y = -1; y <= 1; y++) {
-          for (let z = -1; z <= 1; z++) {
-            let cubelet = createCubelet(x * 1.05, y * 1.05, z * 1.05);
-            cubeGroup.add(cubelet);
-            cubelets.push(cubelet);
-          }
-        }
-      }
-      scene.add(cubeGroup);
-    }
-
-    function shuffleCube(times) {
-      for (let i = 0; i < times; i++) {
-        const axis = ['x', 'y', 'z'][Math.floor(Math.random() * 3)];
-        const angle = Math.PI / 2 * (Math.random() > 0.5 ? 1 : -1);
-        const index = [-1, 0, 1][Math.floor(Math.random() * 3)];
-        const toRotate = cubelets.filter(c => Math.round(c.position[axis] / 1.05) === index);
-
-        const group = new THREE.Group();
-        toRotate.forEach(c => {
-          cubeGroup.remove(c);
-          group.add(c);
-        });
-
-        const rotAxis = axis === 'x' ? new THREE.Vector3(1, 0, 0) : axis === 'y' ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, 0, 1);
-        group.rotateOnAxis(rotAxis, angle);
-
-        toRotate.forEach(c => {
-          group.updateMatrixWorld();
-          c.position.setFromMatrixPosition(c.matrixWorld);
-          cubeGroup.add(c);
-        });
-      }
-    }
-
-    function startLevel(level) {
-      buildCube();
-      const shuffleCount = [0, 2, 4, 8, 16];
-      setTimeout(() => shuffleCube(shuffleCount[level - 1]), 100); // allow cube to be built first
-    }
-
-    function animate() {
-      requestAnimationFrame(animate);
-      controls.update();
-      renderer.render(scene, camera);
-    }
-
-    initScene();
-    buildCube();
-  </script>
+  <select id="levelSelect">
+    <option value="2">Level 1 - 2x2 Cube</option>
+    <option value="3" selected>Level 2 - 3x3 Cube</option>
+    <option value="4">Level 3 - 4x4 Cube</option>
+    <option value="5">Level 4 - 5x5 Cube</option>
+    <option value="6">Level 5 - 6x6 Cube</option>
+  </select>
+  <div id="info">Choose a level and interact with the cube!</div>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.154.0/build/three.min.js"></script>
+  <script type="module" src="./cube.js"></script>
 </body>
 </html>
