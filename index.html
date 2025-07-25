@@ -2,46 +2,108 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>3D Rubik's Cube</title>
+  <title>3D Rubik's Cube - Levels</title>
   <style>
-    body { margin: 0; overflow: hidden; }
-    canvas { display: block; }
+    body { margin: 0; overflow: hidden; font-family: sans-serif; background: #111; color: white; }
+    #levelMenu {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      z-index: 1;
+      background: rgba(0,0,0,0.8);
+      padding: 10px 20px;
+      border-radius: 8px;
+    }
+    #levelMenu button {
+      margin: 4px;
+      padding: 6px 12px;
+      border: none;
+      background: #444;
+      color: white;
+      cursor: pointer;
+    }
+    #levelMenu button:hover {
+      background: #666;
+    }
   </style>
 </head>
 <body>
+  <div id="levelMenu">
+    <strong>اختر المستوى:</strong><br>
+    <button onclick="startLevel(1)">سهل</button>
+    <button onclick="startLevel(2)">سهل جداً</button>
+    <button onclick="startLevel(3)">متوسط</button>
+    <button onclick="startLevel(4)">صعب</button>
+    <button onclick="startLevel(5)">احترافي</button>
+  </div>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/controls/OrbitControls.min.js"></script>
   <script>
-    let scene = new THREE.Scene();
-    let camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-    let renderer = new THREE.WebGLRenderer({antialias: true});
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
+    let scene, camera, renderer, controls, cubelets = [];
 
-    let controls = new THREE.OrbitControls(camera, renderer.domElement);
+    function initScene() {
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+      renderer = new THREE.WebGLRenderer({antialias: true});
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
 
-    const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffffff, 0xffff00, 0xffa500];
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      camera.position.z = 7;
+
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      animate();
+    }
 
     function createCubelet(x, y, z) {
+      const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffffff, 0xffff00, 0xffa500];
       let geometry = new THREE.BoxGeometry(1, 1, 1);
-      let materials = colors.map(color => new THREE.MeshBasicMaterial({ color }));
+      let materials = colors.map(c => new THREE.MeshBasicMaterial({ color: c }));
       let cube = new THREE.Mesh(geometry, materials);
       cube.position.set(x, y, z);
       return cube;
     }
 
-    let cubelets = [];
-    for (let x = -1; x <= 1; x++) {
-      for (let y = -1; y <= 1; y++) {
-        for (let z = -1; z <= 1; z++) {
-          let cubelet = createCubelet(x * 1.05, y * 1.05, z * 1.05);
-          scene.add(cubelet);
-          cubelets.push(cubelet);
+    function buildCube() {
+      // Remove old cubelets
+      cubelets.forEach(c => scene.remove(c));
+      cubelets = [];
+      for (let x = -1; x <= 1; x++) {
+        for (let y = -1; y <= 1; y++) {
+          for (let z = -1; z <= 1; z++) {
+            let cubelet = createCubelet(x * 1.05, y * 1.05, z * 1.05);
+            scene.add(cubelet);
+            cubelets.push(cubelet);
+          }
         }
       }
     }
 
-    camera.position.z = 7;
+    function shuffleCube(times) {
+      for (let i = 0; i < times; i++) {
+        const axis = ['x', 'y', 'z'][Math.floor(Math.random() * 3)];
+        const angle = Math.PI / 2 * (Math.random() > 0.5 ? 1 : -1);
+        const index = [-1, 0, 1][Math.floor(Math.random() * 3)];
+        const toRotate = cubelets.filter(c => Math.round(c.position[axis]) === index);
+        const matrix = new THREE.Matrix4().makeRotationAxis(
+          axis === 'x' ? new THREE.Vector3(1,0,0) : axis === 'y' ? new THREE.Vector3(0,1,0) : new THREE.Vector3(0,0,1),
+          angle
+        );
+        toRotate.forEach(c => c.position.applyMatrix4(matrix));
+      }
+    }
+
+    function startLevel(level) {
+      buildCube();
+      const shuffleCount = [0, 2, 4, 8, 16];
+      shuffleCube(shuffleCount[level - 1]);
+    }
 
     function animate() {
       requestAnimationFrame(animate);
@@ -49,13 +111,8 @@
       renderer.render(scene, camera);
     }
 
-    animate();
-
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
+    initScene();
+    buildCube();
   </script>
 </body>
 </html>
