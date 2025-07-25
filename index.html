@@ -62,16 +62,22 @@
     }
 
     function createCubelet(x, y, z) {
-      const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffffff, 0xffff00, 0xffa500];
-      let geometry = new THREE.BoxGeometry(1, 1, 1);
-      let materials = colors.map(c => new THREE.MeshBasicMaterial({ color: c }));
-      let cube = new THREE.Mesh(geometry, materials);
-      cube.position.set(x, y, z);
-      return cube;
+      const faceColors = [
+        0xff0000, // Right - red
+        0xffff00, // Left - yellow
+        0x00ff00, // Top - green
+        0x0000ff, // Bottom - blue
+        0xffffff, // Front - white
+        0xffa500  // Back - orange
+      ];
+      const materials = faceColors.map(color => new THREE.MeshBasicMaterial({ color }));
+      const geometry = new THREE.BoxGeometry(1, 1, 1);
+      const cubelet = new THREE.Mesh(geometry, materials);
+      cubelet.position.set(x, y, z);
+      return cubelet;
     }
 
     function buildCube() {
-      // Remove old cubelets
       cubelets.forEach(c => scene.remove(c));
       cubelets = [];
       for (let x = -1; x <= 1; x++) {
@@ -91,11 +97,21 @@
         const angle = Math.PI / 2 * (Math.random() > 0.5 ? 1 : -1);
         const index = [-1, 0, 1][Math.floor(Math.random() * 3)];
         const toRotate = cubelets.filter(c => Math.round(c.position[axis]) === index);
-        const matrix = new THREE.Matrix4().makeRotationAxis(
-          axis === 'x' ? new THREE.Vector3(1,0,0) : axis === 'y' ? new THREE.Vector3(0,1,0) : new THREE.Vector3(0,0,1),
-          angle
-        );
-        toRotate.forEach(c => c.position.applyMatrix4(matrix));
+
+        const group = new THREE.Group();
+        toRotate.forEach(c => {
+          scene.remove(c);
+          group.add(c);
+        });
+
+        const rotAxis = axis === 'x' ? new THREE.Vector3(1, 0, 0) : axis === 'y' ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, 0, 1);
+        group.rotateOnAxis(rotAxis, angle);
+
+        toRotate.forEach(c => {
+          group.updateMatrixWorld();
+          c.position.setFromMatrixPosition(c.matrixWorld);
+          scene.add(c);
+        });
       }
     }
 
